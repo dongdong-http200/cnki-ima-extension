@@ -3,21 +3,33 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>知网 PDF 入 ima</title>
+  <title>网页与知网 PDF 入 ima</title>
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
-  <header><strong>知网 PDF 入 ima</strong><button id="settings" type="button">设置</button></header>
+  <header><strong>网页与知网 PDF 入 ima</strong><button id="settings" type="button">设置</button></header>
   <main>
-    <p class="label">当前文章</p>
-    <p id="article" class="article">正在识别…</p>
+    <p class="label">当前页面</p>
+    <p id="article" class="article" role="status">正在识别…</p>
+    <p id="pdfNote" class="label" hidden></p>
     <label for="library">目标知识库</label>
     <select id="library" disabled><option>正在加载…</option></select>
     <label for="folder">存放位置</label>
     <select id="folder" disabled><option>请先选择知识库</option></select>
-    <button id="upload" type="button" disabled>下载 PDF 并上传</button>
-    <p id="status" role="status">请保持此弹窗打开，直到上传完成。</p>
+    <label for="pdfLayout">网页 PDF 排版</label>
+    <select id="pdfLayout" disabled>
+      <option value="fit">自动适宽</option>
+      <option value="reader">正文排版（适合文章）</option>
+    </select>
+    <div class="save-actions">
+      <button id="upload" type="button" disabled hidden>下载知网原始 PDF</button>
+      <button id="savePagePdf" type="button" disabled>整页转 PDF</button>
+      <button id="saveLink" type="button" disabled>保存网页链接</button>
+    </div>
+    <p id="status" role="status" aria-live="polite"></p>
   </main>
+  <script src="../src/cnki.js"></script>
+  <script src="../src/ima.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

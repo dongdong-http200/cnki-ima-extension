@@ -18,6 +18,6 @@ function joinChunks(chunks, expectedLength) {
   return output.buffer;
 }
 
-const transferApi = { encodeChunk, decodeChunk, joinChunks };
+var transferApi = { encodeChunk, decodeChunk, joinChunks };
 if (typeof module !== 'undefined') module.exports = transferApi;
 if (typeof self !== 'undefined') self.Transfer = transferApi;

@@ -1,4 +1,5 @@
 const MAX_PDF_BYTES = 200 * 1024 * 1024;
+const pdfCnki = typeof module !== 'undefined' ? require('./cnki.js') : self.Cnki;
 
 function cnkiUrl(value) {
   try {
@@ -11,7 +12,7 @@ function validatePdf(buffer) {
   const bytes = new Uint8Array(buffer);
   if (bytes.byteLength > MAX_PDF_BYTES) throw new Error('PDF 超过 ima 200 MB 上限');
   const head = new TextDecoder('ascii').decode(bytes.subarray(0, 5));
-  if (head !== '%PDF-') throw new Error('下载结果不是 PDF，可能是知网登录页或错误页');
+  if (head !== '%PDF-') throw new Error('取得的内容不是 PDF');
   const tail = new TextDecoder('ascii').decode(bytes.subarray(Math.max(0, bytes.length - 2048)));
   if (!tail.includes('%%EOF')) throw new Error('PDF 不完整，缺少结束标记');
   return buffer;
@@ -30,10 +31,14 @@ function diagnosticRoute(value) {
 async function downloadPdf(url, fetchImpl = fetch) {
   if (!cnkiUrl(url)) throw new Error('PDF 地址不在知网域名内');
   if (new URL(url).searchParams.get('scope')?.toLowerCase() === 'trial') throw new Error('知网只提供试读，未发现可下载的完整 PDF');
-  const response = await fetchImpl(url, { credentials: 'include', redirect: 'follow', cache: 'no-store' });
+  const response = await fetchImpl(url, {
+    credentials: 'include', redirect: 'follow', cache: 'no-store', signal: AbortSignal.timeout(240_000),
+  });
+  const finalUrl = cnkiUrl(response.url) ? new URL(response.url) : null;
+  if (finalUrl) pdfCnki.checkDownloadVerification(finalUrl);
   if (!response.ok) throw new Error(`知网下载失败：HTTP ${response.status}`);
-  if (!cnkiUrl(response.url)) throw new Error('下载重定向到了非知网域名');
-  if (new URL(response.url).searchParams.get('scope')?.toLowerCase() === 'trial') throw new Error('知网返回了试读内容，已停止上传');
+  if (!finalUrl) throw new Error('下载重定向到了非知网域名');
+  if (finalUrl.searchParams.get('scope')?.toLowerCase() === 'trial') throw new Error('知网返回了试读内容，已停止上传');
   const length = Number(response.headers.get('Content-Length'));
   if (Number.isFinite(length) && length > MAX_PDF_BYTES) throw new Error('PDF 超过 ima 200 MB 上限');
   const buffer = await response.arrayBuffer();

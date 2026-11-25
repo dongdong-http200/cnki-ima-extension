@@ -36,11 +36,14 @@ function downloadFromTab(tabId, url, options = {}) {
           if (expected === null) throw new Error('页面内 PDF 传输不完整');
           finish(null, validatePdf(pageTransfer.joinChunks(chunks, expected)));
         } else if (message.type === 'error') {
-          throw new Error(String(message.error || '页面内 PDF 请求失败').slice(0, 200));
+          const error = new Error(String(message.error || '页面内 PDF 请求失败').slice(0, 200));
+          if (message.code === 'CNKI_VERIFICATION_REQUIRED') error.code = message.code;
+          throw error;
         }
       } catch (error) { finish(error); }
     });
-    port.postMessage({ url });
+    try { port.postMessage({ url }); }
+    catch { finish(new Error('无法连接知网页面，请保留论文标签页并重试。')); }
   });
 }
 

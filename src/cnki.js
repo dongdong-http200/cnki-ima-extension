@@ -12,6 +12,13 @@ function isCnkiArticleUrl(value) {
   }
 }
 
+function checkDownloadVerification(url) {
+  if (!/^\/(?:bar\/)?verify(?:\/|$)/i.test(url.pathname)) return;
+  const error = new Error('知网要求安全验证。请在论文页点击「PDF 下载」，完成验证后再返回扩展上传。');
+  error.code = 'CNKI_VERIFICATION_REQUIRED';
+  throw error;
+}
+
 function findArticlePdf(pageUrl, links) {
   if (!isCnkiArticleUrl(pageUrl)) return null;
   for (const link of links) {
@@ -37,6 +44,6 @@ function pickArticleTitle(citationTitle, pageTitle, heading) {
   return title || '知网论文';
 }
 
-var cnkiApi = { isCnkiHost, isCnkiArticleUrl, findArticlePdf, pickArticleTitle };
+var cnkiApi = { isCnkiHost, isCnkiArticleUrl, checkDownloadVerification, findArticlePdf, pickArticleTitle };
 if (typeof module !== 'undefined') module.exports = cnkiApi;
 if (typeof self !== 'undefined') self.Cnki = cnkiApi;

@@ -7,10 +7,13 @@ main { padding: 16px; }
 .label { margin: 0 0 4px; color: #627187; font-size: 12px; }
 .article { min-height: 42px; margin: 0 0 16px; font-weight: 600; }
 label { display: block; margin: 12px 0 6px; }
-select, #upload { width: 100%; min-height: 38px; border-radius: 7px; font: inherit; }
+select, .save-actions button { width: 100%; min-height: 38px; border-radius: 7px; font: inherit; }
 select { padding: 6px 8px; border: 1px solid #cad4e2; background: #fff; }
-#upload { margin-top: 16px; border: 0; background: #1769aa; color: #fff; font-weight: 600; cursor: pointer; }
-#upload:disabled { background: #a7b5c5; cursor: not-allowed; }
+.save-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin-top: 16px; }
+.save-actions button { border: 1px solid #1769aa; background: #1769aa; color: #fff; font-weight: 600; cursor: pointer; }
+#upload { grid-column: 1 / -1; }
+#saveLink { background: #fff; color: #1769aa; }
+.save-actions button:disabled, #saveLink:disabled { border-color: #a7b5c5; background: #e1e7f0; color: #4d5e73; cursor: not-allowed; }
 #status { min-height: 40px; margin: 12px 0 0; color: #4d5e73; font-size: 12px; }
-#status.error { color: #b3261e; }
+#status.error, .article.error { color: #b3261e; }
 #status.success { color: #137333; }

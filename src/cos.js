@@ -32,7 +32,11 @@ async function uploadToCos(buffer, credential, contentType = 'application/pdf', 
     'Content-Type': contentType,
   };
   if (token) headers['x-cos-security-token'] = token;
-  const response = await fetchImpl(`https://${host}${path}`, { method: 'PUT', headers, body: buffer });
+  const signal = AbortSignal.timeout(240_000);
+  const response = await fetchImpl(`https://${host}${path}`, { method: 'PUT', headers, body: buffer, signal, redirect: 'error' }).catch(error => {
+    if (signal.aborted || error.name === 'TimeoutError') throw new Error('PDF 上传到腾讯云超时，请稍后重试。');
+    throw new Error('无法上传 PDF 到腾讯云，请检查网络后重试。');
+  });
   if (!response.ok) throw new Error(`COS 上传失败：HTTP ${response.status}`);
 }
 const cosApi = { uploadToCos };

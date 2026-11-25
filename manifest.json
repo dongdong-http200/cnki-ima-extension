@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "知网 PDF 入 ima",
-  "version": "0.3.0",
-  "description": "将当前有权下载的知网单篇论文 PDF 上传到所选 ima 知识库",
-  "permissions": ["storage", "activeTab", "scripting", "declarativeNetRequest", "cookies"],
+  "name": "网页与知网 PDF 入 ima",
+  "version": "0.4.0",
+  "description": "将网页转为 PDF，或将网页链接及知网原始 PDF 保存到所选 ima 知识库及文件夹",
+  "permissions": ["storage", "activeTab", "scripting", "declarativeNetRequest", "cookies", "debugger"],
   "host_permissions": [
     "https://*.cnki.net/*",
     "https://ima.qq.com/*",
@@ -15,6 +15,6 @@
     "js": ["src/cnki.js", "src/transfer.js", "src/page-content.js", "src/content.js"],
     "run_at": "document_idle"
   }],
-  "action": { "default_title": "知网 PDF 入 ima", "default_popup": "popup/popup.html" },
+  "action": { "default_title": "网页与知网 PDF 入 ima", "default_popup": "popup/popup.html" },
   "options_page": "options/options.html"
 }
