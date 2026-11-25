@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { createImaClient } = require('../src/ima.js');
+const { createImaClient, normalizeWebUrl } = require('../src/ima.js');
 
 const credentials = { clientId: 'id', apiKey: 'key' };
 const bytes = new TextEncoder().encode('%PDF-1.7\n%%EOF').buffer;
@@ -12,6 +12,60 @@ function fakeApi(responses, calls) {
     return { ok: true, json: async () => responses[action] };
   };
 }
+
+test('Ima imports links into the exact selected folder and uses the library ID for its root', async () => {
+  const url = 'https://example.org/article?ref=guide#method';
+  const calls = [];
+  const client = createImaClient(credentials, fakeApi({
+    import_urls: { code: 0, data: { results: { [url]: { url, ret_code: 0, media_id: 'page' } } } },
+  }, calls));
+  for (const folderId of ['nested-folder', '']) {
+    assert.equal(await client.importWebLink({ url, knowledgeBaseId: 'library', folderId }), 'page');
+  }
+  assert.deepEqual(calls.map(call => call.action), ['import_urls', 'import_urls']);
+  assert.deepEqual(calls.map(call => call.body), [
+    { knowledge_base_id: 'library', folder_id: 'nested-folder', urls: [url] },
+    { knowledge_base_id: 'library', folder_id: 'library', urls: [url] },
+  ]);
+});
+
+test('per-link errors are reported even when the IMA request itself succeeded', async () => {
+  const url = 'https://example.org/article';
+  const calls = [];
+  const client = createImaClient(credentials, fakeApi({
+    import_urls: { code: 0, data: { results: { [url]: { url, ret_code: 42 } } } },
+  }, calls));
+  await assert.rejects(client.importWebLink({ url, knowledgeBaseId: 'library', folderId: 'folder' }), /未能导入网页链接.*42/);
+  assert.equal(calls.length, 1);
+});
+
+test('browser pages, local files, credentials and incomplete responses do not count as saved links', async () => {
+  for (const url of ['edge://settings/', 'file:///tmp/site.html', 'https://reader:password@example.org/']) {
+    assert.equal(normalizeWebUrl(url), null);
+  }
+  const calls = [];
+  const client = createImaClient(credentials, fakeApi({ import_urls: { code: 0, data: { results: {} } } }, calls));
+  await assert.rejects(client.importWebLink({ url: 'file:///tmp/site.html', knowledgeBaseId: 'library', folderId: '' }), /有效/);
+  assert.equal(calls.length, 0);
+  await assert.rejects(client.importWebLink({ url: 'https://example.org/', knowledgeBaseId: 'library', folderId: '' }), /未返回这条链接的导入结果/);
+});
+
+test('explains rejected IMA credentials and keeps authenticated requests on the official endpoint', async () => {
+  const client = createImaClient(credentials, async (url, init) => {
+    assert.equal(url, 'https://ima.qq.com/openapi/wiki/v1/get_addable_knowledge_base_list');
+    assert.equal(init.redirect, 'error');
+    return { ok: false, status: 401 };
+  });
+  await assert.rejects(client.listLibraries(), /HTTP 401.*扩展设置.*重新测试连接/);
+});
+
+test('an ambiguous IMA save timeout tells the reader to verify the destination before retrying', async () => {
+  const client = createImaClient(credentials, async (_url, init) => {
+    assert.ok(init.signal instanceof AbortSignal);
+    throw new DOMException('response timed out', 'TimeoutError');
+  });
+  await assert.rejects(client.request('add_knowledge', {}), /保存响应超时.*先核对知识库/);
+});
 
 test('lists writable libraries and uploads PDF before registering it', async () => {
   const calls = [];

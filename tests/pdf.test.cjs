@@ -33,6 +33,18 @@ test('refuses CNKI trial reader even if it returns PDF bytes', async () => {
   await assert.rejects(downloadPdf('https://kns.cnki.net/download/pdf', trial), /试读/);
 });
 
+test('stops at the CNKI verification page without following or uploading it', async () => {
+  const verify = async () => ({
+    ok: true,
+    url: 'https://bar.cnki.net/bar/verify/index.html?ticket=secret',
+    arrayBuffer: async () => assert.fail('verification page must not be opened as a PDF'),
+  });
+  await assert.rejects(downloadPdf('https://bar.cnki.net/bar/download/order', verify), {
+    code: 'CNKI_VERIFICATION_REQUIRED',
+    message: /安全验证.*返回扩展上传/,
+  });
+});
+
 test('reports safe response diagnostics for a non-PDF CNKI download', async () => {
   const html = async () => ({
     ok: true,
